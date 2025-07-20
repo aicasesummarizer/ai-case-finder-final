@@ -1,0 +1,23 @@
+{
+  "name": "ai-case-finder-final",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aicasesummarizer/ai-case-finder-final.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aicasesummarizer/ai-case-finder-final/issues"
+  },
+  "homepage": "https://github.com/aicasesummarizer/ai-case-finder-final#readme",
+  "description": "",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1"
+  }
+}
