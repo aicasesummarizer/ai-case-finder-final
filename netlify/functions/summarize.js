@@ -13,7 +13,7 @@ exports.handler = async (event) => {
         }
 
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const body = JSON.parse(event.body);
         const prompt = body.contents[0].parts[0].text;
