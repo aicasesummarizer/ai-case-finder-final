@@ -1,0 +1,14 @@
+# Netlify configuration file
+
+[build]
+  # This is the folder Netlify will publish.
+  publish = "public"
+  # This is where Netlify will find your serverless functions.
+  functions = "netlify/functions/"
+
+# This rule makes your function available at a clean URL.
+# A request to yoursite.com/api/summarize will be routed to the summarize.js function.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

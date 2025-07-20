@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Case Finder - Instant Legal Case Summaries</title>
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .legal-term { cursor: pointer; color: #60a5fa; border-bottom: 1px dotted #60a5fa; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 0.75rem; max-width: 90%; width: 600px; max-height: 80vh; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: #9ca3af; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8">
+
+    <div id="app-container" class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-bold text-blue-400">AI Case Finder</h1>
+            <p class="text-lg text-gray-400 mt-2">Your A.I. paralegal for interactive case summaries.</p>
+        </header>
+
+        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="searchInput" placeholder="Enter a case name (e.g., 'Marbury v. Madison')" class="flex-grow bg-gray-700 text-white placeholder-gray-400 rounded-lg px-4 py-3 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="searchButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="mr-2" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+                    Summarize Case
+                </button>
+                <div id="loader" class="loader hidden mx-auto sm:mx-0"></div>
+            </div>
+        </div>
+
+        <div id="resultsContainer" class="bg-gray-800 p-6 rounded-xl shadow-lg min-h-[200px] flex flex-col items-center justify-center text-center">
+             <h2 class="text-2xl font-bold text-gray-300">Unlock Any Case Summary</h2><p class="text-gray-400 mt-2">Enter a case name above to begin.</p><svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-gray-600 mt-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        </div>
+        <div id="caseDetailsContainer" class="hidden mt-8 w-full max-w-4xl mx-auto"></div>
+    </div>
+
+    <div id="universalModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <svg id="universalModalClose" class="modal-close w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <h2 id="modalTitle" class="text-2xl font-bold text-blue-300 mb-4"></h2>
+            <div id="modalBody" class="text-gray-300"></div>
+        </div>
+    </div>
+
+    <div id="feedbackModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <svg id="feedbackModalClose" class="modal-close w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <h2 class="text-2xl font-bold text-blue-300 mb-4">Submit Feedback</h2>
+            <p class="text-gray-400 mb-6">Have an idea or found an issue? Let us know!</p>
+            <form id="feedbackForm" action="https://formspree.io/f/xblkdkyw" method="POST">
+                <div class="mb-4">
+                    <label for="feedbackType" class="block text-sm font-medium text-gray-300">Feedback Type</label>
+                    <select id="feedbackType" name="type" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option>General Feedback</option><option>Bug Report</option><option>Feature Request</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="feedbackMessage" class="block text-sm font-medium text-gray-300">Message</label>
+                    <textarea id="feedbackMessage" name="message" rows="4" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Send Feedback</button>
+            </form>
+             <div id="form-status" class="mt-4 text-center"></div>
+        </div>
+    </div>
+
+    <button id="feedbackButton" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full shadow-lg transition-transform hover:scale-105">
+        Feedback
+    </button>
+    
+    <script type="module">
+        let currentCaseData = null;
+        const resultsContainer = document.getElementById('resultsContainer');
+        const caseDetailsContainer = document.getElementById('caseDetailsContainer');
+        const universalModal = document.getElementById('universalModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const loader = document.getElementById('loader');
+        const feedbackButton = document.getElementById('feedbackButton');
+        const feedbackModal = document.getElementById('feedbackModal');
+        const feedbackForm = document.getElementById('feedbackForm');
+
+        async function handleSearch() {
+            const caseQuery = searchInput.value.trim();
+            if (!caseQuery) { alert("Please enter a case name."); return; }
+            toggleLoading(true);
+            resultsContainer.innerHTML = `<div class="flex flex-col items-center"><div class="loader"></div><p class="text-gray-400 mt-4">Searching for '${caseQuery}'...</p></div>`;
+            caseDetailsContainer.classList.add('hidden');
+            try {
+                const summary = await getAiSummary(caseQuery);
+                if (summary) renderAllResults(summary);
+            } catch (error) {
+                console.error("Search failed:", error);
+                resultsContainer.innerHTML = `<p class="text-red-400">An error occurred. Please try again.</p>`;
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        async function getAiSummary(caseQuery) {
+            const prompt = `You are an expert legal assistant AI. Your sole purpose is to provide clear, concise, and structured summaries of legal cases for a law student. For the case "${caseQuery}", provide a summary. It is CRITICAL that your response is a single JSON object with the following exact keys: "caseName", "citation", "court", "year", "caseNumber", "petitioner", "respondent", "dateOfJudgment", "bench", "factsOfTheCase", "legalIssues", "holding", and "significance". - bench: An array of strings. - legalIssues: An array of strings. - IMPORTANT: Within the string values for "factsOfTheCase", "legalIssues", "holding", and "significance", identify key legal terms (e.g., stare decisis) and wrap them in double square brackets like this: [[term]]. - All other fields should be strings. If info is not available, use "N/A".`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+            const apiUrl = "/api/summarize";
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                const parsedBody = JSON.parse(result.body);
+                return JSON.parse(parsedBody.candidates[0].content.parts[0].text);
+            } catch (error) {
+                console.error("Error fetching from AI:", error);
+                resultsContainer.innerHTML = `<p class="text-red-400">Failed to get summary from AI. The server might be busy or the API key may be invalid.</p>`;
+                return null;
+            }
+        }
+
+        function renderAllResults(data) {
+            currentCaseData = data;
+            renderSummary(data);
+            renderCaseDetails(data);
+        }
+        
+        function processTextForTerms(text) {
+            if (!text) return 'N/A';
+            return text.replace(/\[\[(.*?)\]\]/g, `<span class="legal-term" data-term="$1">$1</span>`);
+        }
+
+        function renderSummary(data) {
+            if (!data || !data.caseName) {
+                resultsContainer.innerHTML = `<p class="text-yellow-400">The AI could not provide a valid summary for this query.</p>`; return;
+            }
+            const legalIssuesHtml = data.legalIssues && Array.isArray(data.legalIssues) ? `<ol class="list-decimal list-inside space-y-1">${data.legalIssues.map(issue => `<li>${processTextForTerms(issue)}</li>`).join('')}</ol>` : `<p class="text-gray-300">${processTextForTerms(data.legalIssues)}</p>`;
+            resultsContainer.innerHTML = `<div class="text-left w-full"><h2 class="text-2xl font-bold text-blue-300 mb-1">${data.caseName || 'N/A'}</h2><p class="text-sm text-gray-400 mb-4">${data.citation || 'N/A'} &bull; ${data.court || 'N/A'} (${data.year || 'N/A'})</p><div class="space-y-4"><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Facts of the Case</h3><p class="text-gray-300">${processTextForTerms(data.factsOfTheCase)}</p></div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Legal Issues</h3>${legalIssuesHtml}</div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Holding (The Decision)</h3><p class="text-gray-300">${processTextForTerms(data.holding)}</p></div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Significance</h3><p class="text-gray-300">${processTextForTerms(data.significance)}</p></div></div></div>`;
+            document.querySelectorAll('.legal-term').forEach(term => term.addEventListener('click', handleTermClick));
+        }
+
+        function renderCaseDetails(data) { 
+            const benchHtml = data.bench && Array.isArray(data.bench) ? data.bench.map(judge => `<span>${judge}</span>`).join(', ') : 'N/A';
+            caseDetailsContainer.innerHTML = `<div class="bg-gray-800 p-6 rounded-xl shadow-lg"><h2 class="text-2xl font-bold text-gray-300 mb-4">Case Vitals</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300"><div><strong>Case No.:</strong> ${data.caseNumber || 'N/A'}</div><div><strong>Date:</strong> ${data.dateOfJudgment || 'N/A'}</div><div><strong>Petitioner:</strong> ${data.petitioner || 'N/A'}</div><div><strong>Respondent:</strong> ${data.respondent || 'N/A'}</div><div class="md:col-span-2"><strong>Bench:</strong><div class="mt-2 flex flex-wrap gap-2">${benchHtml}</div></div></div></div>`;
+            caseDetailsContainer.classList.remove('hidden');
+        }
+
+        async function handleTermClick(event) {
+            const term = event.target.dataset.term;
+            if (!term) return;
+            showModal(`Definition: ${term}`);
+            const prompt = `Explain the legal term "${term}" in simple, clear language for a law student. Provide a concise definition and a brief example of its use.`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const apiUrl = "/api/summarize";
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed`);
+                const result = await response.json();
+                const parsedBody = JSON.parse(result.body);
+                modalBody.innerHTML = `<p>${parsedBody.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+            } catch (error) {
+                modalBody.innerHTML = `<p class="text-red-400">Could not retrieve this information.</p>`;
+            }
+        }
+
+        function showModal(title) {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = `<div class="flex justify-center items-center h-32"><div class="loader"></div></div>`;
+            universalModal.classList.remove('hidden');
+        }
+
+        function toggleLoading(isLoading) {
+            searchButton.classList.toggle('hidden', isLoading);
+            loader.classList.toggle('hidden', !isLoading);
+        }
+
+        document.getElementById('universalModalClose').addEventListener('click', () => universalModal.classList.add('hidden'));
+        document.getElementById('feedbackModalClose').addEventListener('click', () => feedbackModal.classList.add('hidden'));
+        feedbackButton.addEventListener('click', () => feedbackModal.classList.remove('hidden'));
+        searchButton.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
+        
+        feedbackForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const data = new FormData(form);
+            const status = document.getElementById('form-status');
+            status.innerHTML = 'Sending...';
+            try {
+                const response = await fetch(form.action, {
+                    method: form.method,
+                    body: data,
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    status.innerHTML = "Thanks for your feedback!";
+                    status.className = 'mt-4 text-center text-green-400';
+                    form.reset();
+                    setTimeout(() => { feedbackModal.classList.add('hidden'); status.innerHTML = ''; }, 2000);
+                } else {
+                    status.innerHTML = "Oops! There was a problem.";
+                    status.className = 'mt-4 text-center text-red-400';
+                }
+            } catch (error) {
+                status.innerHTML = "Oops! There was a problem.";
+                status.className = 'mt-4 text-center text-red-400';
+            }
+        });
+    </script>
+</body>
+</html>
