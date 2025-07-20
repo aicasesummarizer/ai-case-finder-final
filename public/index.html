@@ -109,18 +109,18 @@
         }
 
         async function getAiSummary(caseQuery) {
-            const prompt = \`You are an expert legal assistant AI. Your sole purpose is to provide clear, concise, and structured summaries of legal cases for a law student. For the case "${caseQuery}", provide a summary. It is CRITICAL that your response is a single JSON object with the following exact keys: "caseName", "citation", "court", "year", "caseNumber", "petitioner", "respondent", "dateOfJudgment", "bench", "factsOfTheCase", "legalIssues", "holding", and "significance". - bench: An array of strings. - legalIssues: An array of strings. - IMPORTANT: Within the string values for "factsOfTheCase", "legalIssues", "holding", and "significance", identify key legal terms (e.g., stare decisis) and wrap them in double square brackets like this: [[term]]. - All other fields should be strings. If info is not available, use "N/A".\`;
+            const prompt = `You are an expert legal assistant AI. Your sole purpose is to provide clear, concise, and structured summaries of legal cases for a law student. For the case "${caseQuery}", provide a summary. It is CRITICAL that your response is a single JSON object with the following exact keys: "caseName", "citation", "court", "year", "caseNumber", "petitioner", "respondent", "dateOfJudgment", "bench", "factsOfTheCase", "legalIssues", "holding", and "significance". - bench: An array of strings. - legalIssues: An array of strings. - IMPORTANT: Within the string values for "factsOfTheCase", "legalIssues", "holding", and "significance", identify key legal terms (e.g., stare decisis) and wrap them in double square brackets like this: [[term]]. - All other fields should be strings. If info is not available, use "N/A".`;
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
             const apiUrl = "/api/summarize";
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(\`API request failed with status \${response.status}\`);
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                 const result = await response.json();
                 const parsedBody = JSON.parse(result.body);
                 return JSON.parse(parsedBody.candidates[0].content.parts[0].text);
             } catch (error) {
                 console.error("Error fetching from AI:", error);
-                resultsContainer.innerHTML = \`<p class="text-red-400">Failed to get summary from AI. The server might be busy or the API key may be invalid.</p>\`;
+                resultsContainer.innerHTML = `<p class="text-red-400">Failed to get summary from AI. The server might be busy or the API key may be invalid.</p>`;
                 return null;
             }
         }
@@ -130,48 +130,48 @@
             renderSummary(data);
             renderCaseDetails(data);
         }
-
+        
         function processTextForTerms(text) {
             if (!text) return 'N/A';
-            return text.replace(/\[\[(.*?)\]\]/g, \`<span class="legal-term" data-term="$1">$1</span>\`);
+            return text.replace(/\[\[(.*?)\]\]/g, `<span class="legal-term" data-term="$1">$1</span>`);
         }
 
         function renderSummary(data) {
             if (!data || !data.caseName) {
-                resultsContainer.innerHTML = \`<p class="text-yellow-400">The AI could not provide a valid summary for this query.</p>\`; return;
+                resultsContainer.innerHTML = `<p class="text-yellow-400">The AI could not provide a valid summary for this query.</p>`; return;
             }
-            const legalIssuesHtml = data.legalIssues && Array.isArray(data.legalIssues) ? \`<ol class="list-decimal list-inside space-y-1">\${data.legalIssues.map(issue => \`<li>\${processTextForTerms(issue)}</li>\`).join('')}</ol>\` : \`<p class="text-gray-300">\${processTextForTerms(data.legalIssues)}</p>\`;
-            resultsContainer.innerHTML = \`<div class="text-left w-full"><h2 class="text-2xl font-bold text-blue-300 mb-1">\${data.caseName || 'N/A'}</h2><p class="text-sm text-gray-400 mb-4">\${data.citation || 'N/A'} &bull; \${data.court || 'N/A'} (\${data.year || 'N/A'})</p><div class="space-y-4"><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Facts of the Case</h3><p class="text-gray-300">\${processTextForTerms(data.factsOfTheCase)}</p></div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Legal Issues</h3>\${legalIssuesHtml}</div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Holding (The Decision)</h3><p class="text-gray-300">\${processTextForTerms(data.holding)}</p></div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Significance</h3><p class="text-gray-300">\${processTextForTerms(data.significance)}</p></div></div></div>\`;
+            const legalIssuesHtml = data.legalIssues && Array.isArray(data.legalIssues) ? `<ol class="list-decimal list-inside space-y-1">${data.legalIssues.map(issue => `<li>${processTextForTerms(issue)}</li>`).join('')}</ol>` : `<p class="text-gray-300">${processTextForTerms(data.legalIssues)}</p>`;
+            resultsContainer.innerHTML = `<div class="text-left w-full"><h2 class="text-2xl font-bold text-blue-300 mb-1">${data.caseName || 'N/A'}</h2><p class="text-sm text-gray-400 mb-4">${data.citation || 'N/A'} &bull; ${data.court || 'N/A'} (${data.year || 'N/A'})</p><div class="space-y-4"><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Facts of the Case</h3><p class="text-gray-300">${processTextForTerms(data.factsOfTheCase)}</p></div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Legal Issues</h3>${legalIssuesHtml}</div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Holding (The Decision)</h3><p class="text-gray-300">${processTextForTerms(data.holding)}</p></div><div><h3 class="font-semibold text-lg text-gray-200 border-b border-gray-600 pb-1 mb-2">Significance</h3><p class="text-gray-300">${processTextForTerms(data.significance)}</p></div></div></div>`;
             document.querySelectorAll('.legal-term').forEach(term => term.addEventListener('click', handleTermClick));
         }
 
         function renderCaseDetails(data) { 
-            const benchHtml = data.bench && Array.isArray(data.bench) ? data.bench.map(judge => \`<span>\${judge}</span>\`).join(', ') : 'N/A';
-            caseDetailsContainer.innerHTML = \`<div class="bg-gray-800 p-6 rounded-xl shadow-lg"><h2 class="text-2xl font-bold text-gray-300 mb-4">Case Vitals</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300"><div><strong>Case No.:</strong> \${data.caseNumber || 'N/A'}</div><div><strong>Date:</strong> \${data.dateOfJudgment || 'N/A'}</div><div><strong>Petitioner:</strong> \${data.petitioner || 'N/A'}</div><div><strong>Respondent:</strong> \${data.respondent || 'N/A'}</div><div class="md:col-span-2"><strong>Bench:</strong><div class="mt-2 flex flex-wrap gap-2">\${benchHtml}</div></div></div></div>\`;
+            const benchHtml = data.bench && Array.isArray(data.bench) ? data.bench.map(judge => `<span>${judge}</span>`).join(', ') : 'N/A';
+            caseDetailsContainer.innerHTML = `<div class="bg-gray-800 p-6 rounded-xl shadow-lg"><h2 class="text-2xl font-bold text-gray-300 mb-4">Case Vitals</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300"><div><strong>Case No.:</strong> ${data.caseNumber || 'N/A'}</div><div><strong>Date:</strong> ${data.dateOfJudgment || 'N/A'}</div><div><strong>Petitioner:</strong> ${data.petitioner || 'N/A'}</div><div><strong>Respondent:</strong> ${data.respondent || 'N/A'}</div><div class="md:col-span-2"><strong>Bench:</strong><div class="mt-2 flex flex-wrap gap-2">${benchHtml}</div></div></div></div>`;
             caseDetailsContainer.classList.remove('hidden');
         }
 
         async function handleTermClick(event) {
             const term = event.target.dataset.term;
             if (!term) return;
-            showModal(\`Definition: \${term}\`);
-            const prompt = \`Explain the legal term "\${term}" in simple, clear language for a law student. Provide a concise definition and a brief example of its use.\`;
+            showModal(`Definition: ${term}`);
+            const prompt = `Explain the legal term "${term}" in simple, clear language for a law student. Provide a concise definition and a brief example of its use.`;
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
             const apiUrl = "/api/summarize";
             try {
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(\`API request failed\`);
+                if (!response.ok) throw new Error(`API request failed`);
                 const result = await response.json();
                 const parsedBody = JSON.parse(result.body);
-                modalBody.innerHTML = \`<p>\${parsedBody.candidates[0].content.parts[0].text.replace(/\\n/g, '<br>')}</p>\`;
+                modalBody.innerHTML = `<p>${parsedBody.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</p>`;
             } catch (error) {
-                modalBody.innerHTML = \`<p class="text-red-400">Could not retrieve this information.</p>\`;
+                modalBody.innerHTML = `<p class="text-red-400">Could not retrieve this information.</p>`;
             }
         }
 
         function showModal(title) {
             modalTitle.textContent = title;
-            modalBody.innerHTML = \`<div class="flex justify-center items-center h-32"><div class="loader"></div></div>\`;
+            modalBody.innerHTML = `<div class="flex justify-center items-center h-32"><div class="loader"></div></div>`;
             universalModal.classList.remove('hidden');
         }
 
@@ -185,7 +185,7 @@
         feedbackButton.addEventListener('click', () => feedbackModal.classList.remove('hidden'));
         searchButton.addEventListener('click', handleSearch);
         searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
-
+        
         feedbackForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const form = event.target;
