@@ -115,17 +115,11 @@
     try {
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-
-        const result = await response.json();
-        const responseBody = JSON.parse(result.body);
-
-        // CORRECTED LOGIC: Check if the response has the expected structure
-        if (responseBody && responseBody.candidates && responseBody.candidates[0] && responseBody.candidates[0].content && responseBody.candidates[0].content.parts && responseBody.candidates[0].content.parts[0]) {
-            const jsonString = responseBody.candidates[0].content.parts[0].text;
-            return JSON.parse(jsonString);
-        } else {
-            throw new Error("Invalid response structure from AI.");
-        }
+        
+        // --- THIS IS THE FIX ---
+        // We now get the body as plain text and parse it directly.
+        const jsonString = await response.text();
+        return JSON.parse(jsonString);
 
     } catch (error) {
         console.error("Error fetching from AI:", error);
