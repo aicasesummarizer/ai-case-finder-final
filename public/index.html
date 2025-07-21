@@ -108,22 +108,31 @@
             }
         }
 
-        async function getAiSummary(caseQuery) {
-            const prompt = `You are an expert legal assistant AI. Your sole purpose is to provide clear, concise, and structured summaries of legal cases for a law student. For the case "${caseQuery}", provide a summary. It is CRITICAL that your response is a single JSON object with the following exact keys: "caseName", "citation", "court", "year", "caseNumber", "petitioner", "respondent", "dateOfJudgment", "bench", "factsOfTheCase", "legalIssues", "holding", and "significance". - bench: An array of strings. - legalIssues: An array of strings. - IMPORTANT: Within the string values for "factsOfTheCase", "legalIssues", "holding", and "significance", identify key legal terms (e.g., stare decisis) and wrap them in double square brackets like this: [[term]]. - All other fields should be strings. If info is not available, use "N/A".`;
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-            const apiUrl = "/api/summarize";
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                const result = await response.json();
-                const parsedBody = JSON.parse(result.body);
-                return JSON.parse(parsedBody.candidates[0].content.parts[0].text);
-            } catch (error) {
-                console.error("Error fetching from AI:", error);
-                resultsContainer.innerHTML = `<p class="text-red-400">Failed to get summary from AI. The server might be busy or the API key may be invalid.</p>`;
-                return null;
-            }
+       async function getAiSummary(caseQuery) {
+    const prompt = `You are an expert legal assistant AI. Your sole purpose is to provide clear, concise, and structured summaries of legal cases for a law student. For the case "${caseQuery}", provide a summary. It is CRITICAL that your response is a single JSON object with the following exact keys: "caseName", "citation", "court", "year", "caseNumber", "petitioner", "respondent", "dateOfJudgment", "bench", "factsOfTheCase", "legalIssues", "holding", and "significance". - bench: An array of strings. - legalIssues: An array of strings. - IMPORTANT: Within the string values for "factsOfTheCase", "legalIssues", "holding", and "significance", identify key legal terms (e.g., stare decisis) and wrap them in double square brackets like this: [[term]]. - All other fields should be strings. If info is not available, use "N/A".`;
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+    const apiUrl = "/api/summarize";
+    try {
+        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+
+        const result = await response.json();
+        const responseBody = JSON.parse(result.body);
+
+        // CORRECTED LOGIC: Check if the response has the expected structure
+        if (responseBody && responseBody.candidates && responseBody.candidates[0] && responseBody.candidates[0].content && responseBody.candidates[0].content.parts && responseBody.candidates[0].content.parts[0]) {
+            const jsonString = responseBody.candidates[0].content.parts[0].text;
+            return JSON.parse(jsonString);
+        } else {
+            throw new Error("Invalid response structure from AI.");
         }
+
+    } catch (error) {
+        console.error("Error fetching from AI:", error);
+        resultsContainer.innerHTML = `<p class="text-red-400">Failed to get summary from AI. The server might be busy, the API key may be invalid, or the AI response was in an unexpected format.</p>`;
+        return null;
+    }
+}
 
         function renderAllResults(data) {
             currentCaseData = data;
