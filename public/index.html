@@ -163,42 +163,45 @@
         }
 
         // --- Interactive Pop-ups ---
-        async function handleJudgeClick(event) {
-            const judgeName = event.target.dataset.judgeName;
-            if (!judgeName || !currentCaseData) return;
-            showModal(`Analysis for Judge ${judgeName}`);
-            const prompt = `In the context of the case "${currentCaseData.caseName}", what were the specific statements, opinions, or contributions made by Judge ${judgeName}? Provide a concise summary.`;
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const apiUrl = "/api/summarize";
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API request failed`);
-                const result = await response.json();
-                const text = JSON.parse(result.body).candidates[0].content.parts[0].text;
-                modalBody.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
-            } catch (error) {
-                modalBody.innerHTML = `<p class="text-red-400">Could not retrieve this information.</p>`;
-            }
-        }
+async function handleJudgeClick(event) {
+    const judgeName = event.target.dataset.judgeName;
+    if (!judgeName || !currentCaseData) return;
+    showModal(`Analysis for Judge ${judgeName}`);
+    const prompt = `In the context of the case "${currentCaseData.caseName}", what were the specific statements, opinions, or contributions made by Judge ${judgeName}? Provide a concise summary.`;
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+    const apiUrl = "/api/summarize";
+    try {
+        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!response.ok) throw new Error(`API request failed`);
 
-        async function handleTermClick(event) {
-            const term = event.target.dataset.term;
-            if (!term) return;
-            showModal(`Definition: ${term}`);
-            const prompt = `Explain the legal term "${term}" in simple, clear language for a law student. Provide a concise definition and a brief example of its use.`;
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const apiUrl = "/api/summarize";
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API request failed`);
-                const result = await response.json();
-                const text = JSON.parse(result.body).candidates[0].content.parts[0].text;
-                modalBody.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
-            } catch (error) {
-                modalBody.innerHTML = `<p class="text-red-400">Could not retrieve this information.</p>`;
-            }
-        }
+        // CORRECTED LOGIC: Read the plain text response directly
+        const text = await response.text();
+        modalBody.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
 
+    } catch (error) {
+        modalBody.innerHTML = `<p class="text-red-400">Could not retrieve this information.</p>`;
+    }
+}
+
+async function handleTermClick(event) {
+    const term = event.target.dataset.term;
+    if (!term) return;
+    showModal(`Definition: ${term}`);
+    const prompt = `Explain the legal term "${term}" in simple, clear language for a law student. Provide a concise definition and a brief example of its use.`;
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+    const apiUrl = "/api/summarize";
+    try {
+        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!response.ok) throw new Error(`API request failed`);
+
+        // CORRECTED LOGIC: Read the plain text response directly
+        const text = await response.text();
+        modalBody.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
+
+    } catch (error) {
+        modalBody.innerHTML = `<p class="text-red-400">Could not retrieve this information.</p>`;
+    }
+}
         // --- Cosmetic Features ---
         function startActiveUserCounter() {
             const activeUsersDiv = document.getElementById('activeUsers');
